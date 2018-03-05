@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+encoding//scripts/__init__.py=utf-8
+encoding//scripts/dataprocessors/__init__.py=utf-8
+encoding//scripts/dataprocessors/bank_account.py=utf-8
+encoding//scripts/dataprocessors/bank_statement.py=utf-8
+encoding//scripts/dataprocessors/contact.py=utf-8
+encoding//scripts/dataprocessors/customer_invoice.py=utf-8
+encoding//scripts/dataprocessors/payment_term.py=utf-8
+encoding//scripts/dataprocessors/product.py=utf-8
+encoding//scripts/dataprocessors/supplier_invoice.py=utf-8
+encoding//scripts/dolibarr2odoo.py=utf-8
