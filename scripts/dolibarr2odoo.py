@@ -8,10 +8,11 @@ Utility functions to convert data
 
 
 @author: C. Guychard
-@copyright: ©2017 Article714
+@copyright: ©2018 Article714
 @license: AGPL
 '''
 
+import importlib
 import logging
 import mysql.connector
 
@@ -48,46 +49,19 @@ class dolibarr2Odoo(OdooScript.Script):
             self.logger.info(err)
             return -1
 
-        #******************************************************************
-        # Mise à jour des partenaires, contacts
-
-        # De-activated -- > contact.update_partners(self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Itération sur les produits
-
-        # De-activated -- > product.update_products(self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Itération sur les conditions de paiement
-
-        # De-activated payment_term.update_payment_terms(self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Itération sur les banques et comptes bancaires
-
-        # De-activated bank_accounts.update_bank_accounts(self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Mise à jour des commandes et factures client
-
-        product_template_model = self.env['product.template']
-
-        found = product_template_model.search([('default_code', '=', 'OF-PREST')])
-        if len(found) == 1:
-            of_prest_prod = found[0]
-            customer_invoice.update_factures(of_prest_prod, self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Mise à jour des commandes et factures client
-
-        found = product_template_model.search([('default_code', '=', 'GEN-SERV')])
-        if len(found) == 1:
-            ach_prest_gen = found[0]
-            supplier_invoice.update_factures(ach_prest_gen, self.logger, self.env, self.cr, dolidb)
-
-        #******************************************************************
-        # Fin de script
+        list_processors = self.getConfigValue("processors").split(',')
+        for p in list_processors:
+            self.logger.info("Will process " + str(p))
+            try:
+                mod = mod = importlib.import_module(str(p))
+                if mod != None:
+                    try:
+                        mod.process(self.logger, self.env, self.cr, dolidb)
+                    except:
+                        self.logger.exception("Not able to process " + str(p))
+            except:
+                self.logger.exception("Not able to import " + str(p))
+                continue
 
         if dolidb:
             dolidb.close()

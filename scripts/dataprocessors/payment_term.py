@@ -7,12 +7,12 @@ Utility functions to convert data
 
 
 @author: C. Guychard
-@copyright: ©2017 Article714
+@copyright: ©2018 Article714
 @license: AGPL
 '''
 
 
-def update_payment_terms (logger, odooenv, odoocr, dolidb):
+def process (logger, odooenv, odoocr, dolidb):
     #******************************************************************
     # Iteration sur les conditions de paiement
 

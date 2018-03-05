@@ -1,0 +1,1 @@
+migration script must be run on a host with a working (but not running) Odoo server.

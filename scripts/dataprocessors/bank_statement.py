@@ -7,14 +7,14 @@ Utility functions to convert data
 
 
 @author: C. Guychard
-@copyright: ©2017 Article714
+@copyright: ©2018 Article714
 @license: AGPL
 '''
 
 from odootools.Converters import toString
 
 
-def update_bank_accounts (logger, odooenv, odoocr, dolidb):
+def process (logger, odooenv, odoocr, dolidb):
     #******************************************************************
     # Itération sur les banques et comptes bancaires
 

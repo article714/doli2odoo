@@ -7,28 +7,29 @@ Utility functions to convert data
 
 
 @author: C. Guychard
-@copyright: ©2017 Article714
+@copyright: ©2018 Article714
 @license: AGPL
 '''
 from datetime import date, timedelta, datetime
 import mysql.connector
 import re
 
+from odoo.exceptions import ValidationError
 from odootools.Converters import toString
 
 
-def update_partners(logger, odooenv, odoocr, dolidb):
+def process(logger, odooenv, odoocr, dolidb):
 
     try:
 
-        hier = datetime.combine(date.today() - timedelta(1), datetime.min.time())
-
         #******************************************************************
-        # Récupération de l'id de France
+        # Country map cash
 
-        found_countries = odooenv['res.country'].search([('code', '=', 'FR')])
+        countries = {}
 
-        fr_id = found_countries[0].id
+        found_countries = odooenv['res.country'].search([('code', '=', 'FR')], limit = 1)
+        if len(found_countries) == 1:
+            countries['FR'] = found_countries[0].id
 
         #******************************************************************
         # Itération sur les sociétés
@@ -38,12 +39,18 @@ def update_partners(logger, odooenv, odoocr, dolidb):
 
         logger.info("Migration des societes et contacts \n")
 
-        nestedquery = ("select lastname,firstname,poste,email from llx_socpeople where fk_soc=%s")
+        nestedquery = ("select name,firstname,poste,email from llx_socpeople where fk_soc=%s")
 
         dolicursor = dolidb.cursor()
-        dolicursor.execute("select rowid,nom,address,zip,town,phone,fax,url,email,client,fournisseur,siret,ape,tva_intra,tms from llx_societe")
+        dolicursor.execute("select s.rowid,s.nom,s.address,s.cp,s.ville,s.tel,s.fax,s.url,s.email,s.client,s.fournisseur,s.siret,s.ape,s.tva_intra,s.tms,p.code from llx_societe s, llx_c_pays p where s.fk_pays=p.rowid")
 
-        for (soc_id, name, addr, azip, city, phone, fax, url, email, is_client, is_fournisseur, siret, ape, tva_intra, last_update) in dolicursor.fetchall():
+        for (soc_id, name, addr, azip, city, phone, fax, url, email, is_client, is_fournisseur, siret, ape, tva_intra, last_update, code_iso) in dolicursor.fetchall():
+
+            # country search
+            if not code_iso in countries:
+                found_countries = odooenv['res.country'].search([('code', '=', code_iso)], limit = 1)
+                if len(found_countries) == 1:
+                    countries[code_iso] = found_countries[0].id
 
             found_partners = res_partner_model.search([('name', '=', name)])
             is_customer = (is_client == 1) or (is_client == 3)
@@ -52,20 +59,8 @@ def update_partners(logger, odooenv, odoocr, dolidb):
                       'phone':phone, 'fax':fax, 'website':url, 'email':email,
                       'company_type':'company', 'is_company':True,
                       'customer':is_customer, 'supplier':is_supplier,
-                      'notify_email':'none', 'country_id':fr_id
+                      'notify_email':'none', 'country_id':countries[code_iso]
                       }
-            if tva_intra:
-                if re.match(r'[A-Z]{2}[0-9]{11}', tva_intra):
-                    values['vat'] = tva_intra
-                else:
-                    logger.warning("TVA is not good: " + toString(tva_intra) + "-- " + name)
-
-            if siret :
-                if len(siret) == 14:
-                    values['siren'] = siret[0:9]
-                    values['nic'] = siret[9:]
-                else:
-                    logger.warning("SIRET is not good: " + toString(siret) + "-- " + name)
 
             if ape:
                 naf = ape[0:2] + '.' + ape[2:]
@@ -77,16 +72,14 @@ def update_partners(logger, odooenv, odoocr, dolidb):
             try:
                 if len(found_partners) == 1:
                     partner = found_partners[0]
-                    if last_update > hier:
-                        partner.write(values)
+                    partner.write(values)
                 elif len(found_partners) == 0:
                     partner = res_partner_model.create(values)
                 else:
                     logger.warn("WARNING: several res.partner found for name = " + name)
 
-            except Exception as e:
-                logger.error(toString(e))
-                logger.error('Mauvaises valeurs pour le contact  ' + toString(name))
+            except ValidationError as e:
+                logger.error("Data Error : " + str(e))
 
             odoocr.commit()
             #******************************************************************
@@ -106,18 +99,21 @@ def update_partners(logger, odooenv, odoocr, dolidb):
                     values = {'name':ctct_name, 'parent_id':partner.id,
                               'function':poste, 'email':email,
                               'company_type':'person', 'is_company':False,
-                              'notify_email':'none', 'country_id':fr_id}
-                    if len(found) == 1:
-                        contact = found[0]
-                        contact.write(values)
-                    elif len(found2) == 1:
-                        contact = found2[0]
-                        contact.write(values)
+                              'notify_email':'none', 'country_id':countries[code_iso]}
+                    try:
+                        if len(found) == 1:
+                            contact = found[0]
+                            contact.write(values)
+                        elif len(found2) == 1:
+                            contact = found2[0]
+                            contact.write(values)
 
-                    elif len(found) == 0 and len(found2) == 0:
-                        contact = res_partner_model.create(values)
-                    else:
-                        logger.warn("WARNING: several res.partner found for name = " + ctct_name)
+                        elif len(found) == 0 and len(found2) == 0:
+                            contact = res_partner_model.create(values)
+                        else:
+                            logger.warn("WARNING: several res.partner found for name = " + ctct_name)
+                    except ValidationError as e:
+                        logger.error("Data Error : " + str(e))
 
                 dolipcursor.close()
                 odoocr.commit()
