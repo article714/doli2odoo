@@ -20,4 +20,4 @@ ADDONS_DIR=${addons_directory}
 
 export PYTHONPATH=${PYTHONPATH}:${ADDONS_DIR}/doli2odoo/:${ADDONS_DIR}/odootools
 
-python ${ADDONS_DIR}/doli2odoo/dolibarr_to_odoo.py -c ${1}
+python ${ADDONS_DIR}/doli2odoo/dolibarr2odoo.py -c ${1}
