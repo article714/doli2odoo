@@ -18,7 +18,7 @@ def process (logger, odooenv, odoocr, dolidb):
     #******************************************************************
     # Itération sur les banques et comptes bancaires
 
-    logger.info("Migration des comptes bancaires \n")
+    logger.info("Migrating bank accounts \n")
 
     res_bank_model = odooenv['res.bank']
     account_journal_model = odooenv['account.journal']
