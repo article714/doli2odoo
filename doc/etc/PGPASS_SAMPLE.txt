@@ -1,4 +1,0 @@
-127.0.0.1:5432:*:odoo:monpwd
-localhost:5432:*:odoo:monpwd
-127.0.0.1:5432:*:postgres:monpwd
-monserver:5432:*:postgres:bonjour
