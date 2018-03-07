@@ -30,18 +30,35 @@ def process (logger, odooenv, odoocr, dolidb):
                         from llx_bank b, llx_bank_account a
                         where a.rowid = b.fk_account and num_releve is not null
                         group by b.num_releve, a.iban_prefix,a.rowid
-                        order by enddate asc
+                        order by acc_id,enddate asc
                         ;""")
 
     nestedquery = "select * FROM llx_bank where fk_account=%s and num_releve=%s;"
 
+    releve_amount_query = "select sum(amount) FROM llx_bank where fk_account=%s and num_releve=%s;"
+
+    curr_acc = None
+    a_bank_journal = None
+    prev_amount = 0
+
     for (reldate, enddate, num_releve, iban_prefix, acc_id) in dolicursor.fetchall():
 
-        iban_prefix = iban_prefix.replace(' ', '')
-        found = account_journal_model.search([('bank_acc_number', '=', iban_prefix)])
-        a_bank_journal = None
-        if len(found) == 1:
-            a_bank_journal = found[0]
+        if acc_id != curr_acc:
+            prev_amount = 0
+            curr_acc = acc_id
+            # search journal
+            iban_prefix = iban_prefix.replace(' ', '')
+            found = account_journal_model.search([('bank_acc_number', '=', iban_prefix)])
+            a_bank_journal = None
+            if len(found) == 1:
+                a_bank_journal = found[0]
+
+        # compute amount of current statement
+        dolipcursor = dolidb.cursor()
+        dolipcursor.execute(releve_amount_query, (acc_id, num_releve))
+        (curr_amount,) = dolipcursor.fetchone()
+        print ("GOT " + str(curr_amount) + "//" + str(prev_amount) + "---" + str(acc_id) + "** " + str(num_releve))
+        dolipcursor.close()
 
         # Bank statement
         if a_bank_journal:
@@ -50,8 +67,12 @@ def process (logger, odooenv, odoocr, dolidb):
             found = statement_model.search(['&', ('name', '=', str(num_releve) + '- ' + str(reldate)), ('journal_id', '=', a_bank_journal.id)], limit = 1)
             values = {'name':str(num_releve) + '- ' + str(reldate),
                       'journal_id': a_bank_journal.id,
-                      'date':dateToOdooString(enddate)
+                      'date':dateToOdooString(enddate),
+                      'balance_start':prev_amount,
+                      'balance_end_real':prev_amount + curr_amount
                 }
+
+            prev_amount = prev_amount + curr_amount
             try:
                 if len(found) == 1:
                     the_statement = found[0]
