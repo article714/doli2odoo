@@ -18,7 +18,7 @@ def process (logger, odooenv, odoocr, dolidb):
 
     product_template_model = odooenv['product.template']
 
-    logger.info("Migration des produits \n")
+    logger.info("Migrating producs \n")
 
     dolicursor = dolidb.cursor()
     dolicursor.execute("select ref,label,description, price,tosell,tobuy from llx_product")

@@ -30,6 +30,7 @@ def process (logger, odooenv, odoocr, dolidb):
                         from llx_bank b, llx_bank_account a
                         where a.rowid = b.fk_account and num_releve is not null
                         group by b.num_releve, a.iban_prefix,a.rowid
+                        order by enddate asc
                         ;""")
 
     nestedquery = "select * FROM llx_bank where fk_account=%s and num_releve=%s;"

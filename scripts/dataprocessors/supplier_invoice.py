@@ -16,7 +16,7 @@ import mysql.connector
 from odootools.Converters import toString
 
 
-def update_factures(default_product, logger, odooenv, odoocr, dolidb):
+def process(logger, odooenv, odoocr, dolidb):
 
     try:
 
@@ -26,6 +26,12 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
         acc_payterm_model = odooenv['account.payment.term']
         product_template_model = odooenv['product.template']
         account_journal_model = odooenv['account.journal']
+
+        #******************************************************************
+        # Default product used to import supplier invoice, when product not found
+
+        # TODO
+        default_product = None
 
         #******************************************************************
         # recherche des taxes à l'achat
