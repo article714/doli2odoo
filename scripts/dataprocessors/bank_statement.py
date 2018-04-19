@@ -15,7 +15,7 @@ from odoo.exceptions import ValidationError
 from odootools.Converters import toString, dateToOdooString
 
 
-def process (logger, odooenv, odoocr, dolidb):
+def process(logger, odooenv, odoocr, dolidb):
     #******************************************************************
     # Iterate on bank accounts
 
@@ -57,20 +57,20 @@ def process (logger, odooenv, odoocr, dolidb):
         dolipcursor = dolidb.cursor()
         dolipcursor.execute(releve_amount_query, (acc_id, num_releve))
         (curr_amount,) = dolipcursor.fetchone()
-        print ("GOT " + str(curr_amount) + "//" + str(prev_amount) + "---" + str(acc_id) + "** " + str(num_releve))
         dolipcursor.close()
 
         # Bank statement
         if a_bank_journal:
 
             # search bank_statement
-            found = statement_model.search(['&', ('name', '=', str(num_releve) + '- ' + str(reldate)), ('journal_id', '=', a_bank_journal.id)], limit = 1)
-            values = {'name':str(num_releve) + '- ' + str(reldate),
+            found = statement_model.search(
+                ['&', ('name', '=', str(num_releve) + '- ' + str(reldate)), ('journal_id', '=', a_bank_journal.id)], limit=1)
+            values = {'name': str(num_releve) + '- ' + str(reldate),
                       'journal_id': a_bank_journal.id,
-                      'date':dateToOdooString(enddate),
-                      'balance_start':prev_amount,
-                      'balance_end_real':prev_amount + curr_amount
-                }
+                      'date': dateToOdooString(enddate),
+                      'balance_start': prev_amount,
+                      'balance_end_real': prev_amount + curr_amount
+                      }
 
             prev_amount = prev_amount + curr_amount
             try:
@@ -93,14 +93,14 @@ def process (logger, odooenv, odoocr, dolidb):
                 # Records
                 for ecriture in dolipcursor.fetchall():
                     imp_id = "D2Odoo-" + str(ecriture[0])
-                    values = {'amount':ecriture[4],
-                              'statement_id':the_statement.id,
+                    values = {'amount': ecriture[4],
+                              'statement_id': the_statement.id,
                               'date': dateToOdooString(ecriture[2]),
                               'unique_import_id': imp_id,
                               'name': dateToOdooString(ecriture[5])
-                                }
+                              }
 
-                    found = statement_line_model.search([('unique_import_id', '=', imp_id)], limit = 1)
+                    found = statement_line_model.search([('unique_import_id', '=', imp_id)], limit=1)
                     try:
                         if len(found) == 1:
                             found[0].write(values)
