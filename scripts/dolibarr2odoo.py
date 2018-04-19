@@ -41,10 +41,10 @@ class dolibarr2Odoo(OdooScript.Script):
         # *************************************************************
         # connect to DolibarrDb
         try:
-            dolidb = mysql.connector.connect(user = self.getConfigValue('dolibarr_user'),
-                                          password = self.getConfigValue('dolibarr_pwd'),
-                                          host = self.getConfigValue('dolibarr_host'),
-                                          database = self.getConfigValue('dolibarr_db'))
+            dolidb = mysql.connector.connect(user=self.getConfigValue('dolibarr_user'),
+                                             password=self.getConfigValue('dolibarr_pwd'),
+                                             host=self.getConfigValue('dolibarr_host'),
+                                             database=self.getConfigValue('dolibarr_db'))
         except mysql.connector.Error as err:
             self.logger.info(err)
             return -1
@@ -73,5 +73,4 @@ class dolibarr2Odoo(OdooScript.Script):
 # Launch main function
 if __name__ == "__main__":
     script = dolibarr2Odoo()
-    script.logger_ch.setLevel(logging.DEBUG)
     script.runInOdooContext()
