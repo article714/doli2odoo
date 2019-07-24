@@ -30,8 +30,7 @@ def process(logger, odooenv, odoocr, dolidb):
     # looking for bank account type
 
     found = account_account_type_model.search(
-        ["|", ("name", "ilike", "%bank%"), ("name", "ilike", "%banq%")],
-        limit=1,
+        ["|", ("name", "ilike", "%bank%"), ("name", "ilike", "%banq%")], limit=1
     )
     if len(found) == 1:
         bank_account_type_id = found[0].id
@@ -64,9 +63,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 iban = toString(iban).replace(" ", "").strip()
 
                 # Account
-                found = account_account_model.search(
-                    [("code", "=", account_number)]
-                )
+                found = account_account_model.search([("code", "=", account_number)])
 
                 values = {
                     "user_type_id": bank_account_type_id,

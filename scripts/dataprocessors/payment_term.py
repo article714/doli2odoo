@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on march 2018
 
 Utility functions to convert data
@@ -9,24 +9,26 @@ Utility functions to convert data
 @author: C. Guychard
 @copyright: ©2018 Article714
 @license: AGPL
-'''
+"""
 
 
-def process (logger, odooenv, odoocr, dolidb):
-    #******************************************************************
+def process(logger, odooenv, odoocr, dolidb):
+    # ******************************************************************
     # Iteration sur les conditions de paiement
 
     logger.info("Migration des conditions de paiement \n")
 
-    acc_payterm_model = odooenv['account.payment.term']
+    acc_payterm_model = odooenv["account.payment.term"]
     # acc_paytermline_model = odooenv['account.payment.term.line']
 
     dolicursor = dolidb.cursor()
-    dolicursor.execute("SELECT libelle,libelle_facture,fdm,nbjour FROM llx_c_payment_term;")
+    dolicursor.execute(
+        "SELECT libelle,libelle_facture,fdm,nbjour FROM llx_c_payment_term;"
+    )
 
     for (libelle, libelle_facture, fdm, nbjour) in dolicursor.fetchall():
-        found = acc_payterm_model.search([('name', '=', libelle)])
-        values = { 'name':libelle, 'note':libelle_facture}
+        found = acc_payterm_model.search([("name", "=", libelle)])
+        values = {"name": libelle, "note": libelle_facture}
         if len(found) == 1:
             acc_pt = found[0]
         else:
@@ -38,11 +40,17 @@ def process (logger, odooenv, odoocr, dolidb):
         acc_pt_line = acc_pt.line_ids[0]
         if fdm == 1:
             if nbjour > 30:
-                acc_pt_line.write({'value':'balance', 'option':'last_day_following_month'})
+                acc_pt_line.write(
+                    {"value": "balance", "option": "last_day_following_month"}
+                )
             else:
-                acc_pt_line.write({'value':'balance', 'option':'last_day_current_month'})
+                acc_pt_line.write(
+                    {"value": "balance", "option": "last_day_current_month"}
+                )
         else:
-            acc_pt_line.write({'value':'balance', 'option':'day_after_invoice_date', 'days':nbjour})
+            acc_pt_line.write(
+                {"value": "balance", "option": "day_after_invoice_date", "days": nbjour}
+            )
 
     dolicursor.close()
     found = None

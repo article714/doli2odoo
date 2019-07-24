@@ -16,12 +16,7 @@ import importlib
 import logging
 import mysql.connector
 
-from dataprocessors import (
-    contact,
-    supplier_invoice,
-    customer_invoice,
-    bank_account,
-)
+from dataprocessors import contact, supplier_invoice, customer_invoice, bank_account
 from odootools import OdooScript
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on march 2018
 
 Utility functions to convert data
@@ -9,27 +9,34 @@ Utility functions to convert data
 @author: C. Guychard
 @copyright: ©2018 Article714
 @license: AGPL
-'''
+"""
 
 
-def process (logger, odooenv, odoocr, dolidb):
-    #******************************************************************
+def process(logger, odooenv, odoocr, dolidb):
+    # ******************************************************************
     # Iteration sur les produits
 
-    product_template_model = odooenv['product.template']
+    product_template_model = odooenv["product.template"]
 
     logger.info("Migrating producs \n")
 
     dolicursor = dolidb.cursor()
-    dolicursor.execute("select ref,label,description, price,tosell,tobuy from llx_product")
+    dolicursor.execute(
+        "select ref,label,description, price,tosell,tobuy from llx_product"
+    )
 
     for (ref, label, description, price, tosell, tobuy) in dolicursor.fetchall():
-        found = product_template_model.search([('default_code', '=', ref)])
+        found = product_template_model.search([("default_code", "=", ref)])
 
-        values = {'name':label, 'default_code':ref,
-                  'type':'service', 'list_price':price,
-                  'sale_ok': (tosell == 1), 'purchase_ok': (tobuy == 1),
-                  'description_sale':description}
+        values = {
+            "name": label,
+            "default_code": ref,
+            "type": "service",
+            "list_price": price,
+            "sale_ok": (tosell == 1),
+            "purchase_ok": (tobuy == 1),
+            "description_sale": description,
+        }
 
         if len(found) == 1:
             prod = found[0]
@@ -37,7 +44,9 @@ def process (logger, odooenv, odoocr, dolidb):
         elif len(found) == 0:
             prod = product_template_model.create(values)
         else:
-            logger.warn("WARNING: several product_template found for default_code = " + ref)
+            logger.warn(
+                "WARNING: several product_template found for default_code = " + ref
+            )
 
         odoocr.commit()
 
@@ -45,20 +54,32 @@ def process (logger, odooenv, odoocr, dolidb):
 
     # Produits Génériques
 
-    found = product_template_model.search([('default_code', '=', 'OF-PREST')])
-    values = {'name':'Prestation générique', 'default_code':'OF-PREST',
-                  'type':'service', 'list_price':600, 'standard_price': 400,
-                  'sale_ok': True, 'purchase_ok': False}
+    found = product_template_model.search([("default_code", "=", "OF-PREST")])
+    values = {
+        "name": "Prestation générique",
+        "default_code": "OF-PREST",
+        "type": "service",
+        "list_price": 600,
+        "standard_price": 400,
+        "sale_ok": True,
+        "purchase_ok": False,
+    }
     if len(found) == 1:
         of_prest_prod = found[0]
         of_prest_prod.write(values)
     else:
         of_prest_prod = product_template_model.create(values)
 
-    found = product_template_model.search([('default_code', '=', 'GEN-SERV')])
-    values = {'name':'Achat générique', 'default_code':'GEN-SERV',
-                  'type':'service', 'list_price':0, 'standard_price': 0,
-                  'sale_ok': False, 'purchase_ok': True}
+    found = product_template_model.search([("default_code", "=", "GEN-SERV")])
+    values = {
+        "name": "Achat générique",
+        "default_code": "GEN-SERV",
+        "type": "service",
+        "list_price": 0,
+        "standard_price": 0,
+        "sale_ok": False,
+        "purchase_ok": True,
+    }
     if len(found) == 1:
         ach_prest_gen = found[0]
         ach_prest_gen.write(values)
