@@ -53,15 +53,15 @@ class dolibarr2Odoo(OdooScript.Script):
 
         list_processors = self.getConfigValue("processors").split(",")
         for p in list_processors:
-            self.logger.info("Will process " + str(p))
+            self.logger.error("Will process " + str(p))
             try:
                 mod = mod = importlib.import_module("dataprocessors.%s" % str(p))
                 if mod is not None:
                     try:
                         mod.process(self.logger, self.env, self.cr, dolidb)
-                    except:
+                    except Exception:
                         self.logger.exception("Not able to process " + str(p))
-            except:
+            except Exception:
                 self.logger.exception("Not able to import " + str(p))
                 continue
 
