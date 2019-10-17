@@ -55,8 +55,8 @@ class dolibarr2Odoo(OdooScript.Script):
         for p in list_processors:
             self.logger.info("Will process " + str(p))
             try:
-                mod = mod = importlib.import_module(str(p))
-                if mod != None:
+                mod = mod = importlib.import_module("dataprocessors.%s" % str(p))
+                if mod is not None:
                     try:
                         mod.process(self.logger, self.env, self.cr, dolidb)
                     except:
