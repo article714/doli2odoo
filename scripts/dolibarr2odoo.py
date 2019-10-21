@@ -33,6 +33,7 @@ class dolibarr2Odoo(OdooScript.Script):
 
         self.processor = None
         self.processed = []
+        self.dolidb = None
 
     def run_processor(self, module_name):
         """
@@ -44,14 +45,15 @@ class dolibarr2Odoo(OdooScript.Script):
                 dependencies = getattr(mod, "depends", False)
                 if dependencies:
                     for dep in dependencies:
-                        if dep not in self.processed:
-                            self.run_processor(dep)
+                        self.run_processor(dep)
                 try:
-                    self.logger.warning("Will process %s", str(mod))
-                    # mod.process(self.logger, self.env, self.cr, dolidb)
-                    self.processed.append(mod.__name__)
+                    if mod not in self.processed:
+                        mod.process(self.logger, self.env, self.cr, self.dolidb)
+                        self.processed.append(mod)
                 except Exception:
                     self.logger.exception("Not able to process %s", str(module_name))
+            else:
+                self.logger.exception("Not able to import %s", str(module_name))
 
         except Exception:
             self.logger.exception("Not able to import %s", str(module_name))
@@ -67,7 +69,7 @@ class dolibarr2Odoo(OdooScript.Script):
         # *************************************************************
         # connect to DolibarrDb
         try:
-            dolidb = mysql.connector.connect(
+            self.dolidb = mysql.connector.connect(
                 user=self.getConfigValue("dolibarr_user"),
                 password=self.getConfigValue("dolibarr_pwd"),
                 host=self.getConfigValue("dolibarr_host"),
@@ -89,8 +91,8 @@ class dolibarr2Odoo(OdooScript.Script):
         for p in list_processors:
             self.run_processor(p)
 
-        if dolidb:
-            dolidb.close()
+        if self.dolidb:
+            self.dolidb.close()
 
         self.logger.info("THE (happy) END!\n")
 

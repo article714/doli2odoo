@@ -12,6 +12,7 @@ Utility functions to convert data
 """
 
 from . import bank_account
+from . import bank_statement
 from . import contact
 from . import customer_invoice
 from . import payment_term

@@ -15,9 +15,15 @@ import mysql.connector
 
 from odootools.Converters import toString
 
+# dataprocessors we depend on
+
+depends = ["product", "payment_term"]
+
 
 def update_factures(default_product, logger, odooenv, odoocr, dolidb):
-
+    """
+    Do the job of updating a customer invoice
+    """
     try:
 
         # ******************************************************************

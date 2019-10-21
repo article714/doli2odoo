@@ -16,8 +16,15 @@ import mysql.connector
 from odootools.Converters import toString
 
 
-def process(logger, odooenv, odoocr, dolidb):
+# dataprocessors we depend on
 
+depends = ["product", "payment_term"]
+
+
+def process(logger, odooenv, odoocr, dolidb):
+    """
+    Do the Job for supplier invoices
+    """
     try:
 
         account_invoice_model = odooenv["account.invoice"]
