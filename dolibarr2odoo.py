@@ -13,8 +13,10 @@ Utility functions to convert data
 """
 
 import importlib
-
+import logging
 import mysql.connector
+
+from dataprocessors import contact, supplier_invoice, customer_invoice, bank_account
 from odootools import OdooScript
 
 
@@ -26,43 +28,15 @@ class dolibarr2Odoo(OdooScript.Script):
     # overriden constructor
 
     def __init__(self):
-        """
-        constructor
-        """
+
         OdooScript.Script.__init__(self)
 
         self.processor = None
-        self.processed = []
-
-    def run_processor(self, module_name):
-        """
-        Run a processor function, running dependencies before when needed
-        """
-        try:
-            mod = importlib.import_module("dataprocessors.%s" % str(module_name))
-            if mod is not None:
-                dependencies = getattr(mod, "depends", False)
-                if dependencies:
-                    for dep in dependencies:
-                        if dep not in self.processed:
-                            self.run_processor(dep)
-                try:
-                    self.logger.warning("Will process %s", str(mod))
-                    # mod.process(self.logger, self.env, self.cr, dolidb)
-                    self.processed.append(mod.__name__)
-                except Exception:
-                    self.logger.exception("Not able to process %s", str(module_name))
-
-        except Exception:
-            self.logger.exception("Not able to import %s", str(module_name))
 
     # ********************************************************************************
     # main script
 
     def run(self):
-        """
-        main script
-        """
 
         # *************************************************************
         # connect to DolibarrDb
@@ -77,17 +51,19 @@ class dolibarr2Odoo(OdooScript.Script):
             self.logger.info(err)
             return -1
 
-        processors = self.getConfigValue("processors")
-        if processors == "*":
-            mod = importlib.import_module("dataprocessors")
-            list_processors = []
-            for m in filter(lambda s: s[0] != "_", dir(mod)):
-                list_processors.append(m)
-        else:
-            list_processors = [p.strip() for p in processors.split(",")]
-
+        list_processors = self.getConfigValue("processors").split(",")
         for p in list_processors:
-            self.run_processor(p)
+            self.logger.info("Will process " + str(p))
+            try:
+                mod = mod = importlib.import_module("dataprocessors.%s" % str(p))
+                if mod is not None:
+                    try:
+                        mod.process(self.logger, self.env, self.cr, dolidb)
+                    except:
+                        self.logger.exception("Not able to process " + str(p))
+            except:
+                self.logger.exception("Not able to import " + str(p))
+                continue
 
         if dolidb:
             dolidb.close()
