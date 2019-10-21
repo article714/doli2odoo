@@ -19,7 +19,6 @@ def process(logger, odooenv, odoocr, dolidb):
     logger.info("Migration des conditions de paiement \n")
 
     acc_payterm_model = odooenv["account.payment.term"]
-    # acc_paytermline_model = odooenv['account.payment.term.line']
 
     dolicursor = dolidb.cursor()
     dolicursor.execute(
@@ -41,11 +40,21 @@ def process(logger, odooenv, odoocr, dolidb):
         if fdm == 1:
             if nbjour > 30:
                 acc_pt_line.write(
-                    {"value": "balance", "option": "last_day_following_month"}
+                    {
+                        "value": "balance",
+                        "option": "day_following_month",
+                        "day_of_the_month": 31,
+                        "days": 31,
+                    }
                 )
             else:
                 acc_pt_line.write(
-                    {"value": "balance", "option": "last_day_current_month"}
+                    {
+                        "value": "balance",
+                        "option": "day_current_month",
+                        "day_of_the_month": 31,
+                        "days": 31,
+                    }
                 )
         else:
             acc_pt_line.write(

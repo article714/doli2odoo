@@ -20,7 +20,7 @@ from odootools.Converters import toString
 depends = ["product", "payment_term"]
 
 
-def update_factures(default_product, logger, odooenv, odoocr, dolidb):
+def process(logger, odooenv, odoocr, dolidb):
     """
     Do the job of updating a customer invoice
     """
@@ -29,12 +29,13 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
         # ******************************************************************
         # Itération sur les devis & factures (clients)
 
-        sale_order_model = odooenv["sale.order"]
-        sale_order_line_model = odooenv["sale.order.line"]
+        # sale_order_model = odooenv["sale.order"]
+        # sale_order_line_model = odooenv["sale.order.line"]
         account_journal_model = odooenv["account.journal"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
         product_template_model = odooenv["product.template"]
+        account_tax_group_model = odooenv["account.tax.group"]
 
         # ******************************************************************
         # recherche des taxes à la vente
@@ -44,15 +45,24 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
         )
         tva_20 = tvas[0]
         tvas = odooenv["account.tax"].search(
-            ["&", ("description", "=", "19.6"), ("active", "=", False)]
+            [
+                ("description", "=", "TVA 19,6%"),
+                ("active", "=", False),
+                ("type_tax_use", "=", "sale"),
+            ]
         )
         if len(tvas) != 1:
+            gpe = account_tax_group_model.search([("name", "=", "TVA 19,6%")])
+            if len(gpe) == 0:
+                gpe = account_tax_group_model.create({"name": "TVA 19,6%"})
             tva_196 = tva_20.copy()
             tva_196.write(
                 {
                     "name": u"TVA collectée (vente) 19,6%",
                     "amount": 19.6000,
-                    "description": "19.6",
+                    "description": "TVA 19,6%",
+                    "type_tax_use": "sale",
+                    "tax_group_id": gpe.id,
                     "active": False,
                     "tag_ids": (5, False, False),
                 }
@@ -93,18 +103,20 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
             soc_nom,
             cond_pai,
         ) in dolicursor.fetchall():
-            cmdnum = str(facnum).replace("-FA-", "-CC-")
+
             sale_order = None
             fact = None
 
-            found = sale_order_model.search([("name", "=", cmdnum)])
             p_found = res_partner_model.search([("name", "=", soc_nom)])
-            if cond_pai:
-                cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
-            else:
-                cond_pai_found = []
-            sale_order = None
 
+            # no saleorders for now
+            # found = sale_order_model.search([("name", "=", cmdnum)])
+            
+            if cond_pai:
+               cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
+            else:
+               cond_pai_found = []
+            
             if len(p_found) == 1:
                 values = {
                     "name": cmdnum,

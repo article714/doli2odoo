@@ -17,6 +17,7 @@ def process(logger, odooenv, odoocr, dolidb):
     # Iteration sur les produits
 
     product_template_model = odooenv["product.template"]
+    account_account_model = odooenv["account.account"]
 
     logger.info("Migrating producs \n")
 
@@ -63,6 +64,9 @@ def process(logger, odooenv, odoocr, dolidb):
         "standard_price": 400,
         "sale_ok": True,
         "purchase_ok": False,
+        "property_account_income_id": account_account_model.search(
+            [("code", "=", "701100")]
+        )[0].id,
     }
     if len(found) == 1:
         of_prest_prod = found[0]
@@ -79,6 +83,9 @@ def process(logger, odooenv, odoocr, dolidb):
         "standard_price": 0,
         "sale_ok": False,
         "purchase_ok": True,
+        "property_account_expense_id": account_account_model.search(
+            [("code", "=", "601100")]
+        )[0].id,
     }
     if len(found) == 1:
         ach_prest_gen = found[0]
