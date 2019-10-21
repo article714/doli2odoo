@@ -38,6 +38,13 @@ def process(logger, odooenv, odoocr, dolidb):
         account_tax_group_model = odooenv["account.tax.group"]
 
         # ******************************************************************
+        # Default product used to import supplier invoice, when product not found
+
+        default_product = product_template_model.search(
+            [("default_code", "=", "GEN-PREST")]
+        )
+
+        # ******************************************************************
         # recherche des taxes à la vente
 
         tvas = odooenv["account.tax"].search(
@@ -111,39 +118,39 @@ def process(logger, odooenv, odoocr, dolidb):
 
             # no saleorders for now
             # found = sale_order_model.search([("name", "=", cmdnum)])
-            
+
             if cond_pai:
-               cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
+                cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
             else:
-               cond_pai_found = []
-            
-            if len(p_found) == 1:
-                values = {
-                    "name": cmdnum,
-                    "partner_id": p_found[0].id,
-                    "date_order": toString(date_crea),
-                    "confirmation_date": toString(date_valid),
-                    "state": "sale",
-                    "user_id": None,
-                }
+                cond_pai_found = []
 
-                if len(cond_pai_found) == 1:
-                    values["payment_term_id"] = cond_pai_found[0].id
+            #if len(p_found) == 1:
+            #    values = {
+            #        "name": cmdnum,
+            #        "partner_id": p_found[0].id,
+            #        "date_order": toString(date_crea),
+            #        "confirmation_date": toString(date_valid),
+            #        "state": "sale",
+            #        "user_id": None,
+            #    }
 
-                if len(found) == 1:
-                    sale_order = found[0]
-                    sale_order.write(values)
+            #    if len(cond_pai_found) == 1:
+            #        values["payment_term_id"] = cond_pai_found[0].id
 
-                elif len(found) == 0:
-                    sale_order = sale_order_model.create(values)
-                else:
-                    logger.warn(
-                        "WARNING: several sale_order found for name = " + facnum
-                    )
-            else:
-                logger.warn("WARNING: found no partner for sale.order = " + facnum)
+            #    if len(found) == 1:
+            #        sale_order = found[0]
+            #        sale_order.write(values)
 
-            if sale_order != None:
+            #    elif len(found) == 0:
+            #        sale_order = sale_order_model.create(values)
+            #    else:
+            #        logger.warn(
+            #            "WARNING: several sale_order found for name = " + facnum
+            #       )
+            #else:
+            #    logger.warn("WARNING: found no partner for sale.order = " + facnum)
+
+            if sale_order is not None:
                 dolipcursor = dolidb.cursor()
                 dolipcursor.execute(nestedquery, (fac_id,))
 
@@ -166,7 +173,7 @@ def process(logger, odooenv, odoocr, dolidb):
                         nb_ol = len(ol_found)
                         if nb_ol < 2:
                             p_id = default_product.id
-                            if p_ref != None:
+                            if p_ref is not None:
                                 prod_found = product_template_model.search(
                                     [("default_code", "=", p_ref)]
                                 )
@@ -205,7 +212,7 @@ def process(logger, odooenv, odoocr, dolidb):
 
             # génération de la facture qui va avec
 
-            if sale_order != None:
+            if sale_order is not None:
                 if len(sale_order.invoice_ids) == 0:
                     sale_order.action_invoice_create(final=True, grouped=True)
                 fact = sale_order.invoice_ids[0]
@@ -221,6 +228,9 @@ def process(logger, odooenv, odoocr, dolidb):
                     values["payment_term_id"] = cond_pai_found[0].id
 
                 fact.write(values)
+
+                fact.compute_taxes()
+                fact._compute_amount()
 
                 if fact.state == "draft":
                     # recalcul de la date d'échéance

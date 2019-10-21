@@ -17,4 +17,5 @@ from . import contact
 from . import customer_invoice
 from . import payment_term
 from . import product
+from . import sale_order
 from . import supplier_invoice

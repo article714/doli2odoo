@@ -55,10 +55,10 @@ def process(logger, odooenv, odoocr, dolidb):
 
     # Produits Génériques
 
-    found = product_template_model.search([("default_code", "=", "OF-PREST")])
+    found = product_template_model.search([("default_code", "=", "GEN-PREST")])
     values = {
         "name": "Prestation générique",
-        "default_code": "OF-PREST",
+        "default_code": "GEN-PREST",
         "type": "service",
         "list_price": 600,
         "standard_price": 400,

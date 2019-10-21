@@ -18,7 +18,7 @@ from odootools.Converters import toString
 
 # dataprocessors we depend on
 
-depends = ["contact", "product", "payment_term"]
+depends = ["payment_term", "sale_order"]
 
 
 def process(logger, odooenv, odoocr, dolidb):
@@ -370,8 +370,8 @@ def process(logger, odooenv, odoocr, dolidb):
                                 + description
                             )
                     if fact:
-                        fact.invoice_line_tax_ids.compute_all
-
+                        fact.compute_taxes()
+                        fact._compute_amount()
 
                     dolipcursor.close()
 
