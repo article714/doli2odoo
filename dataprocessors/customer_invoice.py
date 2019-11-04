@@ -170,7 +170,7 @@ def process(logger, odooenv, odoocr, dolidb):
                         nb_lf = len(lf_found)
                         if nb_lf < 2:
                             p_id = default_product.id
-                            acc_id = default_product.property_account_expense_id.id
+                            acc_id = default_product.property_account_income_id.id
                             if p_ref is not None:
                                 prod_found = product_template_model.search(
                                     [("default_code", "=", p_ref)]
