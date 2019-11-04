@@ -27,7 +27,7 @@ def process(logger, odooenv, odoocr, dolidb):
     try:
 
         sale_order_model = odooenv["sale.order"]
-        sale_order_line_model = odooenv["sale.order.line"]
+        # sale_order_line_model = odooenv["sale.order.line"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
 

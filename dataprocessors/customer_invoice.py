@@ -101,10 +101,10 @@ def process(logger, odooenv, odoocr, dolidb):
                                WHERE f.fk_soc=s.rowid;"""
         )
 
-        nestedquery = (
-            "SELECT f.label,f.description,f.tva_tx,f.qty,f.subprice, p.ref FROM llx_facturedet f"
-            + " LEFT OUTER JOIN llx_product p ON f.fk_product = p.rowid where f.fk_facture=%s"
-        )
+        nestedquery = """
+            SELECT f.label,f.description,f.tva_tx,f.qty,f.subprice, p.ref FROM llx_facturedet f
+            LEFT OUTER JOIN llx_product p ON f.fk_product = p.rowid where f.fk_facture=%s;
+            """
 
         for (
             fac_id,
