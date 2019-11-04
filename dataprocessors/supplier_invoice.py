@@ -165,7 +165,7 @@ def process(logger, odooenv, odoocr, dolidb):
 
             if len(p_found) == 1:
                 values = {
-                    "name": facnum,
+                    "reference": facnum,
                     "partner_id": p_found[0].id,
                     "date_invoice": toString(date_crea),
                     "reference": facnum,
