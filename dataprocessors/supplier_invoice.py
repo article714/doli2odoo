@@ -130,7 +130,7 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor = dolidb.cursor()
         dolicursor.execute(
-            """SELECT f.rowid,f.facnumber,f.datec,s.nom , t.libelle
+            """SELECT f.rowid,f.facnumber, f.ref_ext, f.datec,s.nom , t.libelle
                              FROM llx_societe s, llx_facture_fourn f
                                LEFT OUTER JOIN llx_c_payment_term t on f.fk_cond_reglement = t.rowid
                              WHERE f.fk_soc=s.rowid ;"""
