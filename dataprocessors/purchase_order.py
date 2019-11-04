@@ -45,7 +45,6 @@ def process(logger, odooenv, odoocr, dolidb):
         for (
             cmd_id,
             cmdnum,
-            ref,
             ref_supplier,
             ref_ext,
             date_crea,
@@ -71,7 +70,7 @@ def process(logger, odooenv, odoocr, dolidb):
                     "partner_id": p_found[0].id,
                     "date_order": toString(date_valid),
                     "state": "draft",
-                    "partner_ref": ref_supplier
+                    "partner_ref": ref_supplier,
                 }
 
                 if len(cond_pai_found) == 1:
