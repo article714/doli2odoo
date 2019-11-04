@@ -102,7 +102,7 @@ def process(logger, odooenv, odoocr, dolidb):
         )
 
         nestedquery = """
-            SELECT f.label,f.description,f.tva_tx,f.qty,f.subprice, p.ref FROM llx_facturedet f
+            SELECT f.description,f.tva_tx,f.qty,f.subprice, p.ref FROM llx_facturedet f
             LEFT OUTER JOIN llx_product p ON f.fk_product = p.rowid where f.fk_facture=%s;
             """
 
@@ -159,14 +159,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 dolipcursor.execute(nestedquery, (fac_id,))
 
                 if dolipcursor:
-                    for (
-                        label,
-                        description,
-                        tva_tx,
-                        qty,
-                        subprice,
-                        p_ref,
-                    ) in dolipcursor:
+                    for (description, tva_tx, qty, subprice, p_ref) in dolipcursor:
                         lf_found = account_invoice_line_model.search(
                             [
                                 "&",
