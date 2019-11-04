@@ -145,7 +145,14 @@ def process(logger, odooenv, odoocr, dolidb):
 
         logger.info("Migration des devis/commandes Fournisseurs \n")
 
-        for (fac_id, facnum, date_crea, soc_nom, cond_pai) in dolicursor.fetchall():
+        for (
+            fac_id,
+            facnum,
+            ref_fourn,
+            date_crea,
+            soc_nom,
+            cond_pai,
+        ) in dolicursor.fetchall():
             fact = None
 
             found = account_invoice_model.search([("name", "=", facnum)])
@@ -363,7 +370,7 @@ def process(logger, odooenv, odoocr, dolidb):
                             lf.write(values)
                         elif nb_lf == 0:
                             lf = account_invoice_line_model.create(values)
-                            
+
                         else:
                             logger.warn(
                                 "WARNING: several account_invoice_line found for name = "

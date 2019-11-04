@@ -25,12 +25,19 @@ def process(logger, odooenv, odoocr, dolidb):
     Do the job of updating a customer invoice
     """
     try:
+        # ******************************************************************
+        # Default product used to import supplier invoice, when product not found
+
+        # TODO
+        default_product = None
 
         # ******************************************************************
         # Itération sur les devis & factures (clients)
 
-        # sale_order_model = odooenv["sale.order"]
-        # sale_order_line_model = odooenv["sale.order.line"]
+        account_invoice_model = odooenv["account.invoice"]
+        account_invoice_line_model = odooenv["account.invoice.line"]
+        sale_order_model = odooenv["sale.order"]
+        sale_order_line_model = odooenv["sale.order.line"]
         account_journal_model = odooenv["account.journal"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
@@ -91,7 +98,8 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor = dolidb.cursor()
         dolicursor.execute(
-            """ SELECT f.rowid, f.facnumber,f.datec,f.date_valid,s.nom, t.libelle
+            """ SELECT f.rowid, f.facnumber,f.datec,f.date_valid,s.nom, f.ref_ext, f.ref_int,
+                       f.ref_client, t.libelle, f.note, f.note_public
                                FROM llx_societe s, llx_facture f
                                LEFT OUTER JOIN llx_c_payment_term t on f.fk_cond_reglement = t.rowid
                                WHERE f.fk_soc=s.rowid;"""
@@ -108,49 +116,49 @@ def process(logger, odooenv, odoocr, dolidb):
             date_crea,
             date_valid,
             soc_nom,
+            ref_ext,
+            ref_int,
+            ref_client,
             cond_pai,
+            note,
+            note_public
         ) in dolicursor.fetchall():
-
-            sale_order = None
             fact = None
 
+            found = account_invoice_model.search([("name", "=", facnum)])
             p_found = res_partner_model.search([("name", "=", soc_nom)])
-
-            # no saleorders for now
-            # found = sale_order_model.search([("name", "=", cmdnum)])
 
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
             else:
                 cond_pai_found = []
 
-            #if len(p_found) == 1:
-            #    values = {
-            #        "name": cmdnum,
-            #        "partner_id": p_found[0].id,
-            #        "date_order": toString(date_crea),
-            #        "confirmation_date": toString(date_valid),
-            #        "state": "sale",
-            #        "user_id": None,
-            #    }
+            if len(p_found) == 1:
+                values = {
+                    "name": facnum,
+                    "partner_id": p_found[0].id,
+                    "number": facnum,
+                    "date_invoice": toString(date_crea),
+                    "reference": ref_client,
+                    "state": "draft",
+                    "type": "in_invoice",
+                    "journal_id": journal_client.id,
+                }
 
-            #    if len(cond_pai_found) == 1:
-            #        values["payment_term_id"] = cond_pai_found[0].id
+                if len(cond_pai_found) == 1:
+                    values["payment_term_id"] = cond_pai_found[0].id
 
-            #    if len(found) == 1:
-            #        sale_order = found[0]
-            #        sale_order.write(values)
+            if len(found) == 1 and len(p_found) == 1:
+                fact = found[0]
+                fact.write(values)
+            elif len(found) == 0 and len(p_found) == 1:
+                fact = account_invoice_model.create(values)
+            else:
+                logger.warn(
+                    "WARNING: several account_invoice found for name = " + facnum
+                )
 
-            #    elif len(found) == 0:
-            #        sale_order = sale_order_model.create(values)
-            #    else:
-            #        logger.warn(
-            #            "WARNING: several sale_order found for name = " + facnum
-            #       )
-            #else:
-            #    logger.warn("WARNING: found no partner for sale.order = " + facnum)
-
-            if sale_order is not None:
+            if fact is not None:
                 dolipcursor = dolidb.cursor()
                 dolipcursor.execute(nestedquery, (fac_id,))
 
@@ -163,22 +171,27 @@ def process(logger, odooenv, odoocr, dolidb):
                         subprice,
                         p_ref,
                     ) in dolipcursor:
-                        ol_found = sale_order_line_model.search(
+                        lf_found = account_invoice_line_model.search(
                             [
                                 "&",
-                                ("order_id", "=", sale_order.id),
+                                ("invoice_id", "=", fact.id),
                                 ("name", "=", description),
                             ]
                         )
-                        nb_ol = len(ol_found)
-                        if nb_ol < 2:
+                        nb_lf = len(lf_found)
+                        if nb_lf < 2:
                             p_id = default_product.id
+                            acc_id = default_product.property_account_expense_id.id
                             if p_ref is not None:
                                 prod_found = product_template_model.search(
                                     [("default_code", "=", p_ref)]
                                 )
                                 if len(prod_found) == 1:
                                     p_id = prod_found[0].id
+                                    if prod_found[0].property_account_expense_id:
+                                        acc_id = (
+                                            default_product.property_account_expense_id.id
+                                        )
                             if tva_tx == 19.600:
                                 taxes = [(6, False, (tva_196.id,))]
                             elif tva_tx == 0:
@@ -186,63 +199,28 @@ def process(logger, odooenv, odoocr, dolidb):
                             else:
                                 taxes = [(6, False, (tva_20.id,))]
                             values = {
-                                "order_id": sale_order.id,
+                                "invoice_id": fact.id,
                                 "product_id": p_id,
-                                "product_uom_qty": qty,
-                                "customer_lead": 0,
+                                "account_id": acc_id,
+                                "quantity": qty,
                                 "price_unit": subprice,
                                 "name": description,
-                                "tax_id": taxes,
+                                "invoice_line_tax_ids": taxes,
                             }
-                        if nb_ol == 1:
-                            ol = ol_found[0]
-                            ol.write(values)
-                        elif nb_ol == 0:
-                            ol = sale_order_line_model.create(values)
+                        if nb_lf == 1:
+                            lf = lf_found[0]
+                            lf.write(values)
+                        elif nb_lf == 0:
+                            lf = account_invoice_line_model.create(values)
                         else:
                             logger.warn(
-                                "WARNING: several sale_order_line found for name = "
+                                "WARNING: several account_invoice_line found for name = "
                                 + description
                             )
 
                     dolipcursor.close()
-                    odoocr.commit()
 
             odoocr.commit()
-
-            # génération de la facture qui va avec
-
-            if sale_order is not None:
-                if len(sale_order.invoice_ids) == 0:
-                    sale_order.action_invoice_create(final=True, grouped=True)
-                fact = sale_order.invoice_ids[0]
-
-                values = {
-                    "name": facnum,
-                    "number": facnum,
-                    "date_invoice": toString(date_crea),
-                    "journal_id": journal_client.id,
-                }
-
-                if len(cond_pai_found) == 1:
-                    values["payment_term_id"] = cond_pai_found[0].id
-
-                fact.write(values)
-
-                fact.compute_taxes()
-                fact._compute_amount()
-
-                if fact.state == "draft":
-                    # recalcul de la date d'échéance
-                    fact._onchange_payment_term_date_invoice()
-
-                    # passage en "ouvert" avec génération des écritures comptables
-                    fact.action_move_create()
-                    fact.state = "open"
-                    fact.write({"state": "open", "number": facnum})
-                    odoocr.commit()
-
-                odoocr.commit()
 
         dolicursor.close()
 
