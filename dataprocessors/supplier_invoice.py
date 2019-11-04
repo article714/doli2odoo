@@ -33,13 +33,13 @@ def process(logger, odooenv, odoocr, dolidb):
         account_tax_group_model = odooenv["account.tax.group"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
-        product_template_model = odooenv["product.template"]
+        product_product_model = odooenv["product.product"]
         account_journal_model = odooenv["account.journal"]
 
         # ******************************************************************
         # Default product used to import supplier invoice, when product not found
 
-        default_product = product_template_model.search(
+        default_product = product_product_model.search(
             [("default_code", "=", "GEN-SERV")]
         )
 
@@ -212,7 +212,7 @@ def process(logger, odooenv, odoocr, dolidb):
                             p_id = default_product.id
                             acc_id = default_product.property_account_expense_id.id
                             if p_ref is not None:
-                                prod_found = product_template_model.search(
+                                prod_found = product_product_model.search(
                                     [("default_code", "=", p_ref)]
                                 )
                                 if len(prod_found) == 1:
