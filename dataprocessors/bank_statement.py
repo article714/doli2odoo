@@ -15,6 +15,9 @@ from odoo.exceptions import ValidationError
 from odootools.Converters import toString, dateToOdooString
 
 
+depends = ["bank_account"]
+
+
 def process(logger, odooenv, odoocr, dolidb):
     # ******************************************************************
     # Iterate on bank accounts

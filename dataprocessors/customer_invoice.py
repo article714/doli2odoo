@@ -15,20 +15,34 @@ import mysql.connector
 
 from odootools.Converters import toString
 
+# dataprocessors we depend on
 
-def update_factures(default_product, logger, odooenv, odoocr, dolidb):
+depends = ["product", "payment_term"]
 
+
+def process(logger, odooenv, odoocr, dolidb):
+    """
+    Do the job of updating a customer invoice
+    """
     try:
 
         # ******************************************************************
         # Itération sur les devis & factures (clients)
 
-        sale_order_model = odooenv["sale.order"]
-        sale_order_line_model = odooenv["sale.order.line"]
+        # sale_order_model = odooenv["sale.order"]
+        # sale_order_line_model = odooenv["sale.order.line"]
         account_journal_model = odooenv["account.journal"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
         product_template_model = odooenv["product.template"]
+        account_tax_group_model = odooenv["account.tax.group"]
+
+        # ******************************************************************
+        # Default product used to import supplier invoice, when product not found
+
+        default_product = product_template_model.search(
+            [("default_code", "=", "GEN-PREST")]
+        )
 
         # ******************************************************************
         # recherche des taxes à la vente
@@ -38,15 +52,24 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
         )
         tva_20 = tvas[0]
         tvas = odooenv["account.tax"].search(
-            ["&", ("description", "=", "19.6"), ("active", "=", False)]
+            [
+                ("description", "=", "TVA 19,6%"),
+                ("active", "=", False),
+                ("type_tax_use", "=", "sale"),
+            ]
         )
         if len(tvas) != 1:
+            gpe = account_tax_group_model.search([("name", "=", "TVA 19,6%")])
+            if len(gpe) == 0:
+                gpe = account_tax_group_model.create({"name": "TVA 19,6%"})
             tva_196 = tva_20.copy()
             tva_196.write(
                 {
                     "name": u"TVA collectée (vente) 19,6%",
                     "amount": 19.6000,
-                    "description": "19.6",
+                    "description": "TVA 19,6%",
+                    "type_tax_use": "sale",
+                    "tax_group_id": gpe.id,
                     "active": False,
                     "tag_ids": (5, False, False),
                 }
@@ -87,45 +110,47 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
             soc_nom,
             cond_pai,
         ) in dolicursor.fetchall():
-            cmdnum = str(facnum).replace("-FA-", "-CC-")
+
             sale_order = None
             fact = None
 
-            found = sale_order_model.search([("name", "=", cmdnum)])
             p_found = res_partner_model.search([("name", "=", soc_nom)])
+
+            # no saleorders for now
+            # found = sale_order_model.search([("name", "=", cmdnum)])
+
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
             else:
                 cond_pai_found = []
-            sale_order = None
 
-            if len(p_found) == 1:
-                values = {
-                    "name": cmdnum,
-                    "partner_id": p_found[0].id,
-                    "date_order": toString(date_crea),
-                    "confirmation_date": toString(date_valid),
-                    "state": "sale",
-                    "user_id": None,
-                }
+            #if len(p_found) == 1:
+            #    values = {
+            #        "name": cmdnum,
+            #        "partner_id": p_found[0].id,
+            #        "date_order": toString(date_crea),
+            #        "confirmation_date": toString(date_valid),
+            #        "state": "sale",
+            #        "user_id": None,
+            #    }
 
-                if len(cond_pai_found) == 1:
-                    values["payment_term_id"] = cond_pai_found[0].id
+            #    if len(cond_pai_found) == 1:
+            #        values["payment_term_id"] = cond_pai_found[0].id
 
-                if len(found) == 1:
-                    sale_order = found[0]
-                    sale_order.write(values)
+            #    if len(found) == 1:
+            #        sale_order = found[0]
+            #        sale_order.write(values)
 
-                elif len(found) == 0:
-                    sale_order = sale_order_model.create(values)
-                else:
-                    logger.warn(
-                        "WARNING: several sale_order found for name = " + facnum
-                    )
-            else:
-                logger.warn("WARNING: found no partner for sale.order = " + facnum)
+            #    elif len(found) == 0:
+            #        sale_order = sale_order_model.create(values)
+            #    else:
+            #        logger.warn(
+            #            "WARNING: several sale_order found for name = " + facnum
+            #       )
+            #else:
+            #    logger.warn("WARNING: found no partner for sale.order = " + facnum)
 
-            if sale_order != None:
+            if sale_order is not None:
                 dolipcursor = dolidb.cursor()
                 dolipcursor.execute(nestedquery, (fac_id,))
 
@@ -148,7 +173,7 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
                         nb_ol = len(ol_found)
                         if nb_ol < 2:
                             p_id = default_product.id
-                            if p_ref != None:
+                            if p_ref is not None:
                                 prod_found = product_template_model.search(
                                     [("default_code", "=", p_ref)]
                                 )
@@ -187,7 +212,7 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
 
             # génération de la facture qui va avec
 
-            if sale_order != None:
+            if sale_order is not None:
                 if len(sale_order.invoice_ids) == 0:
                     sale_order.action_invoice_create(final=True, grouped=True)
                 fact = sale_order.invoice_ids[0]
@@ -203,6 +228,9 @@ def update_factures(default_product, logger, odooenv, odoocr, dolidb):
                     values["payment_term_id"] = cond_pai_found[0].id
 
                 fact.write(values)
+
+                fact.compute_taxes()
+                fact._compute_amount()
 
                 if fact.state == "draft":
                     # recalcul de la date d'échéance

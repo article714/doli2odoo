@@ -14,6 +14,11 @@ Utility functions to convert data
 from odootools.Converters import toString
 
 
+# dataprocessors we depend on
+
+depends = ["contact"]
+
+
 def process(logger, odooenv, odoocr, dolidb):
     # ******************************************************************
     # Itération sur les banques et comptes bancaires
