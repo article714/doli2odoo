@@ -17,7 +17,7 @@ from odootools.Converters import toString
 
 # dataprocessors we depend on
 
-depends = ["product", "payment_term"]
+depends = ["sale_order", "payment_term"]
 
 
 def process(logger, odooenv, odoocr, dolidb):
@@ -25,19 +25,15 @@ def process(logger, odooenv, odoocr, dolidb):
     Do the job of updating a customer invoice
     """
     try:
-        # ******************************************************************
-        # Default product used to import supplier invoice, when product not found
-
-        # TODO
-        default_product = None
 
         # ******************************************************************
         # Itération sur les devis & factures (clients)
 
         account_invoice_model = odooenv["account.invoice"]
         account_invoice_line_model = odooenv["account.invoice.line"]
-        sale_order_model = odooenv["sale.order"]
-        sale_order_line_model = odooenv["sale.order.line"]
+        # PAs de sale.order pour le moment
+        # sale_order_model = odooenv["sale.order"]
+        # sale_order_line_model = odooenv["sale.order.line"]
         account_journal_model = odooenv["account.journal"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
@@ -121,7 +117,7 @@ def process(logger, odooenv, odoocr, dolidb):
             ref_client,
             cond_pai,
             note,
-            note_public
+            note_public,
         ) in dolicursor.fetchall():
             fact = None
 

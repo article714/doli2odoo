@@ -18,7 +18,7 @@ from odootools.Converters import toString
 
 # dataprocessors we depend on
 
-depends = ["payment_term", "sale_order"]
+depends = ["payment_term", "purchase_order"]
 
 
 def process(logger, odooenv, odoocr, dolidb):

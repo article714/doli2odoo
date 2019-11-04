@@ -5,7 +5,7 @@
 #-------------------
 # test args
 
-if [ "${1}" = "" ] ; then
+if [ "${1}" = "" ]; then
         echo
         echo "USAGE: ${0} <configfile>"
         echo
@@ -14,9 +14,7 @@ fi
 
 source ${1}
 
-
 ADDONS_DIR=${addons_directory}
-
 
 export PYTHONPATH=${PYTHONPATH}:${ADDONS_DIR}/doli2odoo/:${ADDONS_DIR}/odootools
 
