@@ -10,9 +10,8 @@ Utility functions to convert data
 @copyright: ©2018 Article714
 @license: AGPL
 """
-from datetime import date, timedelta, datetime
+
 import mysql.connector
-import re
 
 from odoo.exceptions import ValidationError
 from odootools.Converters import toString
@@ -45,7 +44,11 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor = dolidb.cursor()
         dolicursor.execute(
-            "select s.rowid,s.nom,s.address,s.cp,s.ville,s.tel,s.fax,s.url,s.email,s.client,s.fournisseur,s.siret,s.ape,s.tva_intra,s.tms,p.code from llx_societe s, llx_c_pays p where s.fk_pays=p.rowid"
+            """
+            select s.rowid,s.nom,s.address,s.cp,s.ville,s.tel,s.fax,s.url,s.email,s.client,
+            s.fournisseur,s.siret,s.ape,s.tva_intra,s.tms,p.code
+            from llx_societe s, llx_c_pays p where s.fk_pays=p.rowid
+            """
         )
 
         for (
@@ -68,7 +71,7 @@ def process(logger, odooenv, odoocr, dolidb):
         ) in dolicursor.fetchall():
 
             # country search
-            if not code_iso in countries:
+            if code_iso not in countries:
                 found_countries = odooenv["res.country"].search(
                     [("code", "=", code_iso)], limit=1
                 )
@@ -171,5 +174,5 @@ def process(logger, odooenv, odoocr, dolidb):
         return 0
 
     except mysql.connector.Error as err:
-        logger.error("SQL Error: " + str(err))
+        logger.exception("SQL Error: " + str(err))
         return -1

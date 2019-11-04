@@ -37,13 +37,13 @@ def process(logger, odooenv, odoocr, dolidb):
         account_journal_model = odooenv["account.journal"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
-        product_template_model = odooenv["product.template"]
+        product_product_model = odooenv["product.product"]
         account_tax_group_model = odooenv["account.tax.group"]
 
         # ******************************************************************
         # Default product used to import supplier invoice, when product not found
 
-        default_product = product_template_model.search(
+        default_product = product_product_model.search(
             [("default_code", "=", "GEN-PREST")]
         )
 
@@ -137,7 +137,7 @@ def process(logger, odooenv, odoocr, dolidb):
                     "date_invoice": toString(date_crea),
                     "reference": ref_client,
                     "state": "draft",
-                    "type": "in_invoice",
+                    "type": "out_invoice",
                     "journal_id": journal_client.id,
                 }
 
@@ -172,7 +172,7 @@ def process(logger, odooenv, odoocr, dolidb):
                             p_id = default_product.id
                             acc_id = default_product.property_account_income_id.id
                             if p_ref is not None:
-                                prod_found = product_template_model.search(
+                                prod_found = product_product_model.search(
                                     [("default_code", "=", p_ref)]
                                 )
                                 if len(prod_found) == 1:
@@ -214,5 +214,5 @@ def process(logger, odooenv, odoocr, dolidb):
         dolicursor.close()
 
     except mysql.connector.Error as err:
-        logger.error("SQL Error: " + str(err))
+        logger.exception("SQL Error: " + str(err))
         return -1

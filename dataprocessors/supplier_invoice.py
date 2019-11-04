@@ -171,7 +171,7 @@ def process(logger, odooenv, odoocr, dolidb):
                     "reference": facnum,
                     "state": "draft",
                     "type": "in_invoice",
-                    "journal_id": journal_fournisseur.id,
+                    "journal_id": journal_fournisseur.id
                 }
 
                 if len(cond_pai_found) == 1:
@@ -385,5 +385,5 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor.close()
     except mysql.connector.Error as err:
-        logger.error("SQL Error: " + str(err))
+        logger.exception("SQL Error: " + str(err))
         return -1

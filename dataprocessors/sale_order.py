@@ -30,6 +30,10 @@ def process(logger, odooenv, odoocr, dolidb):
         # sale_order_line_model = odooenv["sale.order.line"]
         res_partner_model = odooenv["res.partner"]
         acc_payterm_model = odooenv["account.payment.term"]
+        sale_order_model = odooenv["sale.order"]
+        # sale_order_line_model = odooenv["sale.order.line"]
+        res_partner_model = odooenv["res.partner"]
+        acc_payterm_model = odooenv["account.payment.term"]
 
         dolicursor = dolidb.cursor()
 
@@ -89,5 +93,5 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor.close()
     except mysql.connector.Error as err:
-        logger.error("SQL Error: " + str(err))
+        logger.exception("SQL Error: " + str(err))
         return -1
