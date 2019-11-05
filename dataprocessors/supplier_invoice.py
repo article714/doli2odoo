@@ -155,7 +155,16 @@ def process(logger, odooenv, odoocr, dolidb):
         ) in dolicursor.fetchall():
             fact = None
 
-            p_found = res_partner_model.search([("name", "=", soc_nom)])
+            p_found = res_partner_model.search(
+                [
+                    ("name", "=ilike", soc_nom),
+                    ("supplier", "=", True),
+                    ("is_company", "=", True),
+                    "|",
+                    ("active", "=", True),
+                    ("active", "=", False),
+                ]
+            )
 
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])

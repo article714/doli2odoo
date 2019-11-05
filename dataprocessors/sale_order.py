@@ -61,7 +61,16 @@ def process(logger, odooenv, odoocr, dolidb):
 
             found = sale_order_model.search([("name", "=", cmdnum)])
 
-            p_found = res_partner_model.search([("name", "=", soc_nom)])
+            p_found = res_partner_model.search(
+                [
+                    ("name", "=ilike", soc_nom),
+                    ("customer", "=", True),
+                    ("is_company", "=", True),
+                    "|",
+                    ("active", "=", True),
+                    ("active", "=", False),
+                ]
+            )
 
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
@@ -90,7 +99,9 @@ def process(logger, odooenv, odoocr, dolidb):
                         "WARNING: several account_invoice found for name = %s", cmdnum
                     )
             else:
-                logger.exception("Partner not found for: %s [processing %s]", soc_nom, cmdnum)
+                logger.exception(
+                    "Partner not found for: %s [processing %s]", soc_nom, cmdnum
+                )
 
         dolicursor.close()
     except mysql.connector.Error as err:

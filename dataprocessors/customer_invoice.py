@@ -123,7 +123,16 @@ def process(logger, odooenv, odoocr, dolidb):
             fact = None
 
             found = account_invoice_model.search([("name", "=", facnum)])
-            p_found = res_partner_model.search([("name", "=", soc_nom)])
+            p_found = res_partner_model.search(
+                [
+                    ("name", "=ilike", soc_nom),
+                    ("customer", "=", True),
+                    ("is_company", "=", True),
+                    "|",
+                    ("active", "=", True),
+                    ("active", "=", False),
+                ]
+            )
 
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
@@ -145,7 +154,9 @@ def process(logger, odooenv, odoocr, dolidb):
                 if len(cond_pai_found) == 1:
                     values["payment_term_id"] = cond_pai_found[0].id
             else:
-                logger.exception("Partner not found for: %s [processing %s]", soc_nom, facnum)
+                logger.exception(
+                    "Partner not found for: %s [processing %s]", soc_nom, facnum
+                )
 
             if len(found) == 1 and len(p_found) == 1:
                 fact = found[0]
@@ -154,8 +165,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 fact = account_invoice_model.create(values)
             else:
                 logger.warn(
-                    "WARNING: several account_invoice found for name = %s",
-                    facnum
+                    "WARNING: several account_invoice found for name = %s", facnum
                 )
 
             if fact is not None:
@@ -209,7 +219,7 @@ def process(logger, odooenv, odoocr, dolidb):
                         else:
                             logger.warn(
                                 "WARNING: several account_invoice_line found for name = %s",
-                                description
+                                description,
                             )
                         if lf is not None:
                             # Les taxes
@@ -259,7 +269,7 @@ def process(logger, odooenv, odoocr, dolidb):
                                         tax_lines[tva_20.id] = line[0]
 
                     dolipcursor.close()
-                    
+
                     # re-compute taxes
                     if fact:
                         fact.compute_taxes()
