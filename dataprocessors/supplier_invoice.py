@@ -158,7 +158,6 @@ def process(logger, odooenv, odoocr, dolidb):
             p_found = res_partner_model.search(
                 [
                     ("name", "=ilike", soc_nom),
-                    ("supplier", "=", True),
                     ("is_company", "=", True),
                     "|",
                     ("active", "=", True),
