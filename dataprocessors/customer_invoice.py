@@ -13,7 +13,7 @@ Utility functions to convert data
 
 import mysql.connector
 
-from odootools.Converters import toString
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 
 # dataprocessors we depend on
 
@@ -135,7 +135,7 @@ def process(logger, odooenv, odoocr, dolidb):
                     "name": facnum,
                     "partner_id": p_found[0].id,
                     "number": facnum,
-                    "date_invoice": toString(date_crea),
+                    "date_invoice": date_crea.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
                     "reference": ref_client,
                     "state": "draft",
                     "type": "out_invoice",
@@ -144,6 +144,8 @@ def process(logger, odooenv, odoocr, dolidb):
 
                 if len(cond_pai_found) == 1:
                     values["payment_term_id"] = cond_pai_found[0].id
+            else:
+                logger.exception("Partner not found for: %s [processing %s]", soc_nom, facnum)
 
             if len(found) == 1 and len(p_found) == 1:
                 fact = found[0]
@@ -152,7 +154,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 fact = account_invoice_model.create(values)
             else:
                 logger.warn(
-                    "WARNING: several account_invoice found for name = %s", 
+                    "WARNING: several account_invoice found for name = %s",
                     facnum
                 )
 
@@ -206,32 +208,33 @@ def process(logger, odooenv, odoocr, dolidb):
                             lf = account_invoice_line_model.create(values)
                         else:
                             logger.warn(
-                                "WARNING: several account_invoice_line found for name = %s", 
+                                "WARNING: several account_invoice_line found for name = %s",
                                 description
                             )
-                        # Les taxes
-                        if tva_tx == 19.600:
-                            taxes = [(6, False, (tva_196.id,))]
-                            if tva_196.id not in tax_lines:
-                                line = account_invoice_tax_model.search(
-                                    [
-                                        ("invoice_id", "=", fact.id),
-                                        ("name", "=", tva_196.name),
-                                    ]
-                                )
-                                if len(line) == 0:
-                                    tax_lines[
-                                        tva_196.id
-                                    ] = account_invoice_tax_model.create(
-                                        {
-                                            "account_id": tva_196.account_id.id,
-                                            "invoice_id": fact.id,
-                                            "name": tva_196.name,
-                                            "manual": False,
-                                        }
+                        if lf is not None:
+                            # Les taxes
+                            if tva_tx == 19.600:
+                                taxes = [(6, False, (tva_196.id,))]
+                                if tva_196.id not in tax_lines:
+                                    line = account_invoice_tax_model.search(
+                                        [
+                                            ("invoice_id", "=", fact.id),
+                                            ("name", "=", tva_196.name),
+                                        ]
                                     )
-                                else:
-                                    tax_lines[tva_196.id] = line[0]
+                                    if len(line) == 0:
+                                        tax_lines[
+                                            tva_196.id
+                                        ] = account_invoice_tax_model.create(
+                                            {
+                                                "account_id": tva_196.account_id.id,
+                                                "invoice_id": fact.id,
+                                                "name": tva_196.name,
+                                                "manual": False,
+                                            }
+                                        )
+                                    else:
+                                        tax_lines[tva_196.id] = line[0]
                             elif tva_tx == 20:
                                 taxes = [(6, False, (tva_20.id,))]
                                 if tva_20.id not in tax_lines:
@@ -256,6 +259,11 @@ def process(logger, odooenv, odoocr, dolidb):
                                         tax_lines[tva_20.id] = line[0]
 
                     dolipcursor.close()
+                    
+                    # re-compute taxes
+                    if fact:
+                        fact.compute_taxes()
+                        fact._compute_amount()
 
             odoocr.commit()
 

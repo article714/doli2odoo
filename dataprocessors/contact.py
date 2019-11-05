@@ -94,7 +94,6 @@ def process(logger, odooenv, odoocr, dolidb):
                 "is_company": True,
                 "customer": is_customer,
                 "supplier": is_supplier,
-                "notify_email": "none",
                 "country_id": countries[code_iso],
             }
 
@@ -147,7 +146,6 @@ def process(logger, odooenv, odoocr, dolidb):
                         "email": email,
                         "company_type": "person",
                         "is_company": False,
-                        "notify_email": "none",
                         "country_id": countries[code_iso],
                     }
                     try:

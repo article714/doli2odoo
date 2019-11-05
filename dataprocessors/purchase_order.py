@@ -86,7 +86,9 @@ def process(logger, odooenv, odoocr, dolidb):
                         "WARNING: several account_invoice found for name = %s", cmdnum
                     )
             else:
-                logger.error("Partner not found for: %s", soc_nom)
+                logger.error(
+                    "Partner not found for: %s [processing %s]", soc_nom, cmdnum
+                )
 
         dolicursor.close()
     except mysql.connector.Error as err:

@@ -13,7 +13,7 @@ Utility functions to convert data
 
 import mysql.connector
 
-from odootools.Converters import toString
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 
 
 # dataprocessors we depend on
@@ -155,28 +155,40 @@ def process(logger, odooenv, odoocr, dolidb):
         ) in dolicursor.fetchall():
             fact = None
 
-            found = account_invoice_model.search([("name", "=", facnum)])
             p_found = res_partner_model.search([("name", "=", soc_nom)])
 
             if cond_pai:
                 cond_pai_found = acc_payterm_model.search([("name", "=", cond_pai)])
             else:
                 cond_pai_found = []
-
+            found = []
             if len(p_found) == 1:
+                internal_facnum = "F%s-%s" % (date_crea.strftime("%y%m"), fac_id)
                 values = {
-                    "name": facnum,
+                    "name": internal_facnum,
+                    "number": internal_facnum,
                     "reference": facnum,
                     "partner_id": p_found[0].id,
-                    "date_invoice": toString(date_crea),
-                    "reference": facnum,
+                    "date_invoice": date_crea.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
                     "state": "draft",
                     "type": "in_invoice",
-                    "journal_id": journal_fournisseur.id
+                    "journal_id": journal_fournisseur.id,
                 }
+
+                found = account_invoice_model.search(
+                    [
+                        ("reference", "=", facnum),
+                        ("partner_id", "=", p_found[0].id),
+                        ("name", "=", internal_facnum),
+                    ]
+                )
 
                 if len(cond_pai_found) == 1:
                     values["payment_term_id"] = cond_pai_found[0].id
+            else:
+                logger.exception(
+                    "Partner not found for: %s [processing %s]", soc_nom, facnum
+                )
 
             if len(found) == 1 and len(p_found) == 1:
                 fact = found[0]
@@ -194,13 +206,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 dolipcursor.execute(nestedquery, (fac_id,))
 
                 if dolipcursor:
-                    for (
-                        description,
-                        tva_tx,
-                        qty,
-                        subprice,
-                        p_ref,
-                    ) in dolipcursor:
+                    for (description, tva_tx, qty, subprice, p_ref) in dolipcursor:
                         lf_found = account_invoice_line_model.search(
                             [
                                 ("invoice_id", "=", fact.id),
@@ -376,11 +382,12 @@ def process(logger, odooenv, odoocr, dolidb):
                                 "WARNING: several account_invoice_line found for name = "
                                 + description
                             )
+
+                    dolipcursor.close()
+                    # re-compute taxes
                     if fact:
                         fact.compute_taxes()
                         fact._compute_amount()
-
-                    dolipcursor.close()
 
             odoocr.commit()
 
