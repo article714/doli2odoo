@@ -41,7 +41,8 @@ def process(logger, odooenv, odoocr, dolidb):
             """ SELECT c.rowid, c.ref, c.ref_client, c.date_creation,c.date_valid, c.date_cloture,
                          s.nom, t.libelle
                                 FROM llx_societe s, llx_commande c
-                                LEFT OUTER JOIN llx_c_payment_term t on c.fk_cond_reglement = t.rowid
+                                LEFT OUTER JOIN llx_c_payment_term t
+                                    on c.fk_cond_reglement = t.rowid
                                 WHERE c.fk_soc=s.rowid;"""
         )
 
@@ -86,12 +87,12 @@ def process(logger, odooenv, odoocr, dolidb):
                     cmd = sale_order_model.create(values)
                 else:
                     logger.warn(
-                        "WARNING: several account_invoice found for name = " + cmdnum
+                        "WARNING: several account_invoice found for name = %s", cmdnum
                     )
             else:
                 logger.error("Partner not found for: %s", soc_nom)
 
         dolicursor.close()
     except mysql.connector.Error as err:
-        logger.exception("SQL Error: " + str(err))
+        logger.exception("SQL Error: %s", str(err))
         return -1

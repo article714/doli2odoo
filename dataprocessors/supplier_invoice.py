@@ -165,6 +165,7 @@ def process(logger, odooenv, odoocr, dolidb):
 
             if len(p_found) == 1:
                 values = {
+                    "name": facnum,
                     "reference": facnum,
                     "partner_id": p_found[0].id,
                     "date_invoice": toString(date_crea),
@@ -184,7 +185,7 @@ def process(logger, odooenv, odoocr, dolidb):
                 fact = account_invoice_model.create(values)
             else:
                 logger.warn(
-                    "WARNING: several account_invoice found for name = " + facnum
+                    "WARNING: several account_invoice found for name = %s", facnum
                 )
 
             if fact is not None:
@@ -385,5 +386,5 @@ def process(logger, odooenv, odoocr, dolidb):
 
         dolicursor.close()
     except mysql.connector.Error as err:
-        logger.exception("SQL Error: " + str(err))
+        logger.exception("SQL Error: %s", str(err))
         return -1

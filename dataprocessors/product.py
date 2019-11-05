@@ -46,7 +46,7 @@ def process(logger, odooenv, odoocr, dolidb):
             prod = product_template_model.create(values)
         else:
             logger.warn(
-                "WARNING: several product_template found for default_code = " + ref
+                "WARNING: several product_template found for default_code = %s ", ref
             )
 
         odoocr.commit()

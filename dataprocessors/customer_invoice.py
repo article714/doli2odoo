@@ -31,6 +31,7 @@ def process(logger, odooenv, odoocr, dolidb):
 
         account_invoice_model = odooenv["account.invoice"]
         account_invoice_line_model = odooenv["account.invoice.line"]
+        account_invoice_tax_model = odooenv["account.invoice.tax"]
         # PAs de sale.order pour le moment
         # sale_order_model = odooenv["sale.order"]
         # sale_order_line_model = odooenv["sale.order.line"]
@@ -151,10 +152,12 @@ def process(logger, odooenv, odoocr, dolidb):
                 fact = account_invoice_model.create(values)
             else:
                 logger.warn(
-                    "WARNING: several account_invoice found for name = " + facnum
+                    "WARNING: several account_invoice found for name = %s", 
+                    facnum
                 )
 
             if fact is not None:
+                tax_lines = {}
                 dolipcursor = dolidb.cursor()
                 dolipcursor.execute(nestedquery, (fac_id,))
 
@@ -203,9 +206,54 @@ def process(logger, odooenv, odoocr, dolidb):
                             lf = account_invoice_line_model.create(values)
                         else:
                             logger.warn(
-                                "WARNING: several account_invoice_line found for name = "
-                                + description
+                                "WARNING: several account_invoice_line found for name = %s", 
+                                description
                             )
+                        # Les taxes
+                        if tva_tx == 19.600:
+                            taxes = [(6, False, (tva_196.id,))]
+                            if tva_196.id not in tax_lines:
+                                line = account_invoice_tax_model.search(
+                                    [
+                                        ("invoice_id", "=", fact.id),
+                                        ("name", "=", tva_196.name),
+                                    ]
+                                )
+                                if len(line) == 0:
+                                    tax_lines[
+                                        tva_196.id
+                                    ] = account_invoice_tax_model.create(
+                                        {
+                                            "account_id": tva_196.account_id.id,
+                                            "invoice_id": fact.id,
+                                            "name": tva_196.name,
+                                            "manual": False,
+                                        }
+                                    )
+                                else:
+                                    tax_lines[tva_196.id] = line[0]
+                            elif tva_tx == 20:
+                                taxes = [(6, False, (tva_20.id,))]
+                                if tva_20.id not in tax_lines:
+                                    line = account_invoice_tax_model.search(
+                                        [
+                                            ("invoice_id", "=", fact.id),
+                                            ("name", "=", tva_20.name),
+                                        ]
+                                    )
+                                    if len(line) == 0:
+                                        tax_lines[
+                                            tva_20.id
+                                        ] = account_invoice_tax_model.create(
+                                            {
+                                                "account_id": tva_20.account_id.id,
+                                                "invoice_id": fact.id,
+                                                "name": tva_20.name,
+                                                "manual": False,
+                                            }
+                                        )
+                                    else:
+                                        tax_lines[tva_20.id] = line[0]
 
                     dolipcursor.close()
 
@@ -214,5 +262,5 @@ def process(logger, odooenv, odoocr, dolidb):
         dolicursor.close()
 
     except mysql.connector.Error as err:
-        logger.exception("SQL Error: " + str(err))
+        logger.exception("SQL Error: %s", str(err))
         return -1

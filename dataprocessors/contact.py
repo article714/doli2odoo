@@ -99,7 +99,7 @@ def process(logger, odooenv, odoocr, dolidb):
             }
 
             if ape:
-                naf = ape[0:2] + "." + ape[2:]
+                naf = "%s.%s"%(ape[0:2],ape[2:])
                 naf = naf.upper()
                 found = res_part_categ_model.search([("name", "like", "%" + naf + "%")])
                 if len(found) == 1:
@@ -112,10 +112,10 @@ def process(logger, odooenv, odoocr, dolidb):
                 elif len(found_partners) == 0:
                     partner = res_partner_model.create(values)
                 else:
-                    logger.warn("WARNING: several res.partner found for name = " + name)
+                    logger.warn("WARNING: several res.partner found for name = %s", name)
 
             except ValidationError as e:
-                logger.error("Data Error : " + str(e))
+                logger.error("Data Error : %s", str(e))
 
             odoocr.commit()
             # ******************************************************************
@@ -127,8 +127,8 @@ def process(logger, odooenv, odoocr, dolidb):
 
             if dolipcursor:
                 for (plname, pfname, poste, email) in dolipcursor:
-                    ctct_name = pfname + " " + plname
-                    ctct_name_2 = plname + " " + pfname
+                    ctct_name = "%s %s" % (pfname, plname)
+                    ctct_name_2 = "%s %s" % (plname, pfname)
                     found = res_partner_model.search(
                         ["&", ("name", "=", ctct_name), ("parent_id", "=", partner.id)]
                     )
@@ -166,7 +166,7 @@ def process(logger, odooenv, odoocr, dolidb):
                                 + ctct_name
                             )
                     except ValidationError as e:
-                        logger.error("Data Error : " + str(e))
+                        logger.error("Data Error : %s", str(e))
 
                 dolipcursor.close()
                 odoocr.commit()
@@ -174,5 +174,5 @@ def process(logger, odooenv, odoocr, dolidb):
         return 0
 
     except mysql.connector.Error as err:
-        logger.exception("SQL Error: " + str(err))
+        logger.exception("SQL Error: %s", str(err))
         return -1

@@ -12,7 +12,7 @@ Utility functions to convert data
 """
 
 from odoo.exceptions import ValidationError
-from odootools.Converters import toString, dateToOdooString
+from odootools.Converters import dateToOdooString
 
 
 depends = ["bank_account"]
@@ -30,7 +30,8 @@ def process(logger, odooenv, odoocr, dolidb):
 
     dolicursor = dolidb.cursor()
     dolicursor.execute(
-        """ select DATE_FORMAT(STR_TO_DATE(CONCAT(b.num_releve,'01'),'%Y%m%d'),'%M %Y') as reldate, max(datev) as enddate, b.num_releve, a.iban_prefix,a.rowid as acc_id
+        """ select DATE_FORMAT(STR_TO_DATE(CONCAT(b.num_releve,'01'),'%Y%m%d'),'%M %Y') as reldate,
+                   max(datev) as enddate, b.num_releve, a.iban_prefix,a.rowid as acc_id
                         from llx_bank b, llx_bank_account a
                         where a.rowid = b.fk_account and num_releve is not null
                         group by b.num_releve, a.iban_prefix,a.rowid
@@ -75,13 +76,13 @@ def process(logger, odooenv, odoocr, dolidb):
             found = statement_model.search(
                 [
                     "&",
-                    ("name", "=", str(num_releve) + "- " + str(reldate)),
+                    ("name", "=", "%s- %s" % (str(num_releve), str(reldate))),
                     ("journal_id", "=", a_bank_journal.id),
                 ],
                 limit=1,
             )
             values = {
-                "name": str(num_releve) + "- " + str(reldate),
+                "name": "%s- %s" % (str(num_releve), str(reldate)),
                 "journal_id": a_bank_journal.id,
                 "date": dateToOdooString(enddate),
                 "balance_start": prev_amount,
@@ -97,18 +98,18 @@ def process(logger, odooenv, odoocr, dolidb):
                     the_statement = statement_model.create(values)
 
                 odoocr.commit()
-            except ValidationError as e:
-                logger.error("Wrong Data : " + str(values))
+            except ValidationError:
+                logger.error("Wrong Data : %s", str(values))
                 continue
 
             # Bank statement lines
-            if the_statement != None:
+            if the_statement is not None:
                 dolipcursor = dolidb.cursor()
                 dolipcursor.execute(nestedquery, (acc_id, num_releve))
 
                 # Records
                 for ecriture in dolipcursor.fetchall():
-                    imp_id = "D2Odoo-" + str(ecriture[0])
+                    imp_id = "D2Odoo-%s" % (str(ecriture[0]))
                     values = {
                         "amount": ecriture[4],
                         "statement_id": the_statement.id,
@@ -127,7 +128,7 @@ def process(logger, odooenv, odoocr, dolidb):
                             statement_line_model.create(values)
                     except Exception as e:
                         logger.warning(
-                            "ERROR when updating/creating statement line: " + str(e)
+                            "ERROR when updating/creating statement line: %s", str(e)
                         )
 
             odoocr.commit()
